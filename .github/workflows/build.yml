@@ -1,0 +1,180 @@
+name: Build and Release SearchKeyword
+
+on:
+  push:
+    branches:
+      - main  # Adjust if your default branch is different
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        architecture: [x64, arm64]
+        include:
+          - os: ubuntu-latest
+            architecture: x64
+            rid: linux-x64
+            ext: ''
+          - os: windows-latest
+            architecture: x64
+            rid: win-x64
+            ext: .exe
+          - os: macos-latest
+            architecture: x64
+            rid: osx-x64
+            ext: ''
+          - os: ubuntu-latest
+            architecture: arm64
+            rid: linux-arm64
+            ext: ''
+          - os: windows-latest
+            architecture: arm64
+            rid: win-arm64
+            ext: .exe
+          - os: macos-latest
+            architecture: arm64
+            rid: osx-arm64
+            ext: ''
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Set version using run number
+        id: version
+        run: |
+          base_version="1"
+          run_number=${{ github.run_number }}
+          new_version="${base_version}.${run_number}"
+          
+          echo "New version: $new_version"
+          echo "VERSION=$new_version" >> $GITHUB_ENV
+
+      - name: Publish
+        run: dotnet publish -c Release -r ${{ matrix.rid }} --self-contained true /p:Version=1.${{ github.run_number }} /p:PublishSingleFile=true -o output
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-${{ matrix.os }}-${{ matrix.architecture }}
+          path: output/
+          retention-days: 1
+
+  release:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Download artifacts (Linux x64)
+        uses: actions/download-artifact@v4
+        with:
+          name: app-ubuntu-latest-x64
+          path: ./artifacts/linux-x64
+
+      - name: Download artifacts (Linux ARM64)
+        uses: actions/download-artifact@v4
+        with:
+          name: app-ubuntu-latest-arm64
+          path: ./artifacts/linux-arm64
+
+      - name: Download artifacts (Windows x64)
+        uses: actions/download-artifact@v4
+        with:
+          name: app-windows-latest-x64
+          path: ./artifacts/windows-x64
+
+      - name: Download artifacts (Windows ARM64)
+        uses: actions/download-artifact@v4
+        with:
+          name: app-windows-latest-arm64
+          path: ./artifacts/windows-arm64
+
+      - name: Download artifacts (macOS x64)
+        uses: actions/download-artifact@v4
+        with:
+          name: app-macos-latest-x64
+          path: ./artifacts/macos-x64
+
+      - name: Download artifacts (macOS ARM64)
+        uses: actions/download-artifact@v4
+        with:
+          name: app-macos-latest-arm64
+          path: ./artifacts/macos-arm64
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: "v1.${{ github.run_number }}"
+          release_name: "Release 1.${{ github.run_number }}"
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Asset (Linux x64)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./artifacts/linux-x64/SearchKeyword
+          asset_name: SearchKeyword-linux-x64
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release Asset (Linux ARM64)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./artifacts/linux-arm64/SearchKeyword
+          asset_name: SearchKeyword-linux-arm64
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release Asset (Windows x64)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./artifacts/windows-x64/SearchKeyword.exe
+          asset_name: SearchKeyword-windows-x64.exe
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release Asset (Windows ARM64)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./artifacts/windows-arm64/SearchKeyword.exe
+          asset_name: SearchKeyword-windows-arm64.exe
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release Asset (macOS x64)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./artifacts/macos-x64/SearchKeyword
+          asset_name: SearchKeyword-macos-x64
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release Asset (macOS ARM64)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./artifacts/macos-arm64/SearchKeyword
+          asset_name: SearchKeyword-macos-arm64
+          asset_content_type: application/octet-stream

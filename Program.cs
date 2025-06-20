@@ -177,15 +177,18 @@ class Program
         return ignoreDirs.Any(path.Contains);
     }
 
-    static readonly string[] ignoreFiles = 
-    [ 
-        ".exe", ".dll", ".so", ".bin", ".img", ".iso", ".png", ".jpg", ".jpeg", ".gif", ".bmp",
-        ".tiff", ".ico", ".pdf", ".zip", ".tar", ".gz", ".7z", ".rar", ".mp3", ".wav", ".flac",
-        ".mp4", ".mkv", ".avi", ".mov" 
-    ];
+    static readonly HashSet<string> ignoreExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".exe", ".dll", ".so", ".bin", ".img", ".iso",
+        ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".ico",
+        ".pdf", ".zip", ".tar", ".gz", ".7z", ".rar",
+        ".mp3", ".wav", ".flac", ".mp4", ".mkv", ".avi", ".mov"
+    };
+    
     static bool IsBinaryFile(string filePath)
     {
-        return ignoreFiles.Any(ext => filePath.EndsWith(ext, StringComparison.OrdinalIgnoreCase));
+        var ext = Path.GetExtension(filePath);
+        return ignoreExtensions.Contains(ext);
     }
 
     static void WriteHighlighted(string text, string keyword, ConsoleColor highlightColor, bool caseSensitive)

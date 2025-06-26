@@ -179,7 +179,7 @@ class Program
 
     static readonly HashSet<string> ignoreExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
-        ".exe", ".dll", ".so", ".bin", ".img", ".iso",
+        ".exe", ".dll", ".so", ".bin", ".img", ".iso", ".out"
         ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".ico",
         ".pdf", ".zip", ".tar", ".gz", ".7z", ".rar",
         ".mp3", ".wav", ".flac", ".mp4", ".mkv", ".avi", ".mov"

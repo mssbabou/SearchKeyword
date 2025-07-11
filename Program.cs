@@ -4,7 +4,7 @@ using System.CommandLine.NamingConventionBinder;
 class Program
 {
     static int progressCounter = 0;
-    static readonly object progressLock = new();
+    static readonly Lock progressLock = new();
     static DateTime startTime;
     static DateTime? lastUpdateTime = null;
 
@@ -70,11 +70,11 @@ class Program
     static List<(string FilePath, int LineNumber, string Snippet)> SearchFiles(string keyword, bool caseSensitive, string directory, string filePattern, bool smartSearch)
     {
         List<(string FilePath, int LineNumber, string Snippet)> allResults = [];
-        List<string> files = [.. Directory.GetFiles(directory, filePattern, SearchOption.AllDirectories)];
+        List<string> files = [..Directory.GetFiles(directory, filePattern, SearchOption.AllDirectories)];
 
         if (smartSearch)
         {
-            files = files.Where(file => !ShouldIgnoreDirectory(file) && !IsBinaryFile(file)).ToList();
+            files = [..files.Where(file => !ShouldIgnoreDirectory(file) && !IsBinaryFile(file))];
         }
 
         int totalFiles = files.Count;
@@ -102,11 +102,11 @@ class Program
 
     static List<(string FilePath, int LineNumber, string Snippet)> SearchFile(string keyword, bool caseSensitive, string filePath)
     {
-        List<(string FilePath, int LineNumber, string Snippet)> results = new List<(string FilePath, int LineNumber, string Snippet)>();
+        List<(string FilePath, int LineNumber, string Snippet)> results = [];
 
         try
         {
-            using StreamReader reader = new StreamReader(filePath);
+            using StreamReader reader = new(filePath);
             string line;
             int lineNumber = 0;
             while ((line = reader.ReadLine()) != null)
@@ -179,7 +179,7 @@ class Program
 
     static readonly HashSet<string> ignoreExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
-        ".exe", ".dll", ".so", ".bin", ".img", ".iso", ".out"
+        ".exe", ".dll", ".so", ".bin", ".img", ".iso", ".out",
         ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".ico",
         ".pdf", ".zip", ".tar", ".gz", ".7z", ".rar",
         ".mp3", ".wav", ".flac", ".mp4", ".mkv", ".avi", ".mov"
@@ -198,15 +198,15 @@ class Program
         while ((index = text.IndexOf(keyword, index, comparison)) != -1)
         {
             // Write text before the keyword
-            Console.Write(text.Substring(0, index));
+            Console.Write(text.AsSpan(0, index));
             
             // Set the highlight color and write the keyword
             Console.ForegroundColor = highlightColor;
-            Console.Write(text.Substring(index, keyword.Length));
+            Console.Write(text.AsSpan(index, keyword.Length));
             Console.ResetColor();
             
             // Move the starting point past the keyword
-            text = text.Substring(index + keyword.Length);
+            text = text[(index + keyword.Length)..];
             index = 0;
         }
 
